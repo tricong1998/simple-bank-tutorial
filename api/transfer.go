@@ -2,10 +2,12 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
 	db "github.com/Sotatek-CongNguyen/simple-bank-practice/db/sqlc"
+	"github.com/Sotatek-CongNguyen/simple-bank-practice/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,11 +25,21 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 		return
 	}
 
-	if validateAccount := server.validateAccountTransfer(ctx, req.FromAccountID, req.Currency); !validateAccount {
+	fromAccount, validateAccount := server.validateAccountTransfer(ctx, req.FromAccountID, req.Currency)
+	if !validateAccount {
 		return
 	}
 
-	if validateAccount := server.validateAccountTransfer(ctx, req.ToAccountID, req.Currency); !validateAccount {
+	payload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	if fromAccount.Owner != payload.Username {
+		err := errors.New("account doesn't belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	_, validateAccount = server.validateAccountTransfer(ctx, req.ToAccountID, req.Currency)
+	if !validateAccount {
 		return
 	}
 
@@ -42,22 +54,22 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, account)
 }
 
-func (server *Server) validateAccountTransfer(ctx *gin.Context, accountID int64, currency string) bool {
+func (server *Server) validateAccountTransfer(ctx *gin.Context, accountID int64, currency string) (db.Account, bool) {
 	account, err := server.store.GetAccount(ctx, accountID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return false
+			return account, false
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return false
+		return account, false
 	}
 
 	if account.Currency != currency {
 		err = fmt.Errorf("invalid currency, account: %d, account's currency: %s, currency input: %s", accountID, account.Currency, currency)
 		ctx.JSON(http.StatusNotFound, errorResponse(err))
-		return false
+		return account, false
 	}
 
-	return true
+	return account, true
 }
