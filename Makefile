@@ -1,3 +1,5 @@
+DB_URL=postgresql://postgres:cong1234@localhost:5432/simple-bank-app?sslmode=disable
+
 createdb:
 	docker exec -it postgres createdb --username=root --owner=root simple-bank-app
 
@@ -8,16 +10,16 @@ postgres:
 	docker run --name postgres --network simple-bank-app -p 5433:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:16-alpine
 
 migrateup:
-	migrate -path db/migration -database "postgresql://postgres:cong1234@localhost:5432/simple-bank-app?sslmode=disable" -verbose up
+	migrate -path db/migration -database "$(DB_URL)" -verbose up
 
 migrateup1:
-	migrate -path db/migration -database "postgresql://postgres:cong1234@localhost:5432/simple-bank-app?sslmode=disable" -verbose up 1
+	migrate -path db/migration -database "$(DB_URL)" -verbose up 1
 
 migratedown:
-	migrate -path db/migration -database "postgresql://postgres:cong1234@localhost:5432/simple-bank-app?sslmode=disable" -verbose down
+	migrate -path db/migration -database "$(DB_URL)" -verbose down
 
 migratedown1:
-	migrate -path db/migration -database "postgresql://postgres:cong1234@localhost:5432/simple-bank-app?sslmode=disable" -verbose down 1
+	migrate -path db/migration -database "$(DB_URL)" -verbose down 1
 
 sqlc:
 	sqlc generate	

@@ -1,0 +1,94 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Project simple_bank_practice {
+  database_type: 'PostgreSQL'
+  Note: '''
+    # Simplebank Database
+    **markdown content here**
+  '''
+}
+
+Table users as U {
+  username varchar [pk]
+  hashed_password varchar [not null]
+  email varchar [not null, unique]
+  full_name varchar [not null]
+  password_changed_at timestamptz [not null, default: '0001-01-01 00:00:00Z']
+  created_at timestamptz [not null, default: `now()`]
+    indexes {
+    email
+    username
+  }
+}
+
+Table accounts as A {
+  id bigserial [primary key, increment]
+  owner varchar [ref: > U.username, not null]
+  balance bigint [not null, note: 'must be positive'] 
+  created_at timestamptz [not null, default: `now()`]
+  currency varchar [not null]
+  indexes {
+    owner
+    (owner, currency) [unique]
+  }
+}
+
+Table entries {
+  id bigserial [primary key, increment]
+  account_id bigint [ref: > A.id]
+  amount bignt [not null, note: 'must be positive'] 
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    account_id    
+  }
+}
+
+Table transfer {
+  id bigserial [primary key, increment]
+  from_account_id bigint [ref: > A.id]
+  to_account_id bigint [ref: > A.id]
+  amount bignt [not null, note: 'must be positive'] 
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    from_account_id  
+    to_account_id
+    (from_account_id, to_account_id)
+  }
+}
+
+Table sessions {
+  id uuid [pk]
+  username varchar [ref: > U.username, not null]
+  refresh_token varchar [not null]
+  user_agent varchar [not null]
+  client_ip varchar [not null]
+  is_blocked boolean [not null, default: false]
+  expires_at timestamptz [not null]
+  created_at timestamptz [not null, default: `now()`]
+}
+
+// Enum OrderStatus {
+//   created
+//   processing
+//   succeeded
+//   failed
+// }
+
+// Table posts {
+//   id integer [primary key]
+//   title varchar
+//   body text [note: 'Content of the post']
+//   user_id integer
+//   status varchar
+//   created_at timestamp
+//   updated_at timestamp
+// }
+
+// Ref: posts.user_id > users.id // many-to-one
+
+// Ref: users.id < follows.following_user_id
+
+// Ref: users.id < follows.followed_user_id
