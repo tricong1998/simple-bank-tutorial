@@ -1,0 +1,24 @@
+```
+docker build -t simplebank:latest .
+```
+
+```
+docker run --name simplebank -p 8080:8080 --network=bank-network -e GIN_MODE=release simplebank:latest
+```
+
+```
+docker network create bank-network
+```
+
+```
+docker network connect bank-network postgres
+```
+
+```
+docker pull postgres-16
+```
+
+```
+docker run --name postgres --network bank-network -p 5433:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:16-alpine
+```
+
